@@ -17,12 +17,12 @@ Specify resource to mount:
 Interrogate resource using filesystem primitives:
 
   sondove@atlas:~/projects/apimount$ ls -l test/
-  total 12                                     
+  total 12
   drwxrwxr-x 2 sondove sondove 4096 Mar 23 20:19 resource1
   drwxrwxr-x 9 sondove sondove 4096 Mar 23 20:20 resource2
   drwxrwxr-x 2 sondove sondove 4096 Mar 23 20:19 resource3
 
-  sondove@atlas:~/projects/apimount$ tree test/                                                                                         │sondove@atlas:(master)~/projects/apimount-ref$ ls                  │ 'server': 'nginx',
+  sondove@atlas:~/projects/apimount$ tree test/
   test/
   ├── resource1
   ├── resource2
