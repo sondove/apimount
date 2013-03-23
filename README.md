@@ -3,19 +3,22 @@ apimount
 
 Mount restful web services over fuse...
 
-== Dependencies ==
+## Dependencies
 * Requests [https://github.com/kennethreitz/requests/]
 
 * python-fuse
 
-== Use ==
+## Use
 
 Specify resource to mount:
 
+```bash
   ./apimount 'https://api.example.com' test -c ./sample.cfg
+```
 
 Interrogate resource using filesystem primitives:
 
+```bash
   sondove@atlas:~/projects/apimount$ ls -l test/
   total 12
   drwxrwxr-x 2 sondove sondove 4096 Mar 23 20:19 resource1
@@ -36,4 +39,4 @@ Interrogate resource using filesystem primitives:
   └── resource3
   
   10 directories, 0 files
-
+```
