@@ -1,0 +1,184 @@
+#!/usr/bin/python
+
+# STDLIB DEP
+import time
+import stat
+import errno
+import sys
+import os
+import argparse
+import ConfigParser
+import logging
+import json
+
+# Extern dep
+import requests as req  # consider rewriting to use stdlib 
+import fuse
+
+# this config object holds all options and should be passed along 
+config = ConfigParser.RawConfigParser(allow_no_value=True)
+
+# command line option parsing
+parser = argparse.ArgumentParser(description='Mount restful API on supplied folder')
+
+# mandatory options, api url and mount point
+parser.add_argument('api',  
+        help='Full url, including protocl, of API to mount')
+
+parser.add_argument('mountpoint',  
+        help='Destination folder to mount API on')
+
+#optional
+parser.add_argument('-u','--username', 
+        help='username if service requires authentication')
+
+parser.add_argument('-c','--config', 
+        help='path to configuration file')
+
+parser.add_argument('-s','--session-file', # currently not supported
+        help='path to header/cookie file (replaces authentication)') 
+
+
+parser.add_argument('-d','--debug', action="store_true", 
+        help="debug, don't perform mount, just do api query")
+
+args = parser.parse_args()
+
+
+if args.config:
+    config.readfp(open(args.config))
+else:
+    config.add_section(api)
+
+    #TODO: set cookie here; if cookie not set, get username and password
+
+    if args.username:
+        config.set(api,'username',args.username)
+
+
+def authenticate(api,config):
+    # TODO: request password if not present
+    username = config.get(api,'username')
+    password = config.get(api,'password')
+    auth = config.get(api,'auth')
+
+    # get the auth node with basic web auth
+    r = req.get(api+auth,auth=(username,password))
+
+    # store cookie
+    config.set(api,'cookie',r.cookies)
+    
+    # return status of http call
+    return r.ok
+
+# TODO: Extract username and password from config file if present
+
+# TODO: set up default values
+
+r = True
+if not config.get(args.api,'cookie'):
+    r = authenticate(args.api,config)
+else:
+    cookie = config.get(args.api,'cookie')
+    # make cookie a dict
+    config.set(args.api,'cookie',eval(cookie))
+
+if not r:
+    print "Authentication to %s failed." % (args.api)
+    sys.exit(0)
+
+#
+# We're authenticated and good to go, time to mount the root resource
+#
+
+fuse.fuse_python_api = (0, 2)
+
+class ApiFS(fuse.Fuse):
+    """
+    Main wrapper class for the fs
+    """
+
+    def __init__(self, api, config, *a, **kw):
+        fuse.Fuse.__init__(self, *a, **kw)
+
+        self.uid = os.getuid()
+        self.gid = os.getgid()
+
+        self.config = config
+
+        # extract some basic information for quick reference
+        self.api =api
+        self.apiroot = self.api + config.get(self.api,'root')
+        self.cookie = config.get(self.api,'cookie')
+
+    def getattr(self, path):  
+
+        # construct query path from base api + path
+        query_path = self.api + path
+
+        # use OPTIONS request to figure out neccessary info
+        r = req.options(query_path, cookies=self.cookie) 
+
+        if not r.ok:
+            return - errno.ENOENT  
+
+        # base permissions, none
+        perm = 0
+
+        # for now, always allow execute
+        perm = perm | 0100
+
+        # produce a set of all allowed verbs on the resource
+        allowed = set(r.headers['allow'].split(','))
+
+        # write permissions are given by the ability to modify the resource
+        if allowed & set(['PUT','PATH','POST','DELETE']):
+            perm = perm | 0200
+    
+        # read permissions are defined by the ability to read the resource
+        if allowed & set(['GET']):
+            perm = perm | 0400
+
+
+        # Create file stat object
+        st = fuse.Stat()  
+
+        # TODO: extract type from X-Type header
+        st.st_mode = stat.S_IFDIR | perm
+        st.st_nlink = 2  
+
+        # last modified headr information?
+        # TODO: extract last modified from header
+        st.st_atime = int(time.time())  
+        st.st_mtime = st.st_atime  
+        st.st_ctime = st.st_atime  
+
+        # investigate if string values can be supplied from the server
+        st.st_gid = self.gid
+        st.st_uid = self.uid
+
+        return st  
+
+    def readdir(self, path, offset):  
+        # reading directory, get items from remote server for path
+
+        query_path = self.api + path
+        r = req.get(query_path, cookies=self.cookie) 
+
+        resp = json.loads(r.content)
+
+        # this relies on remote api to use the convention of 
+        # resources and name, consider making this a configurable setting
+        items = [str(x['name']) for x in resp['resources']]
+
+        for i in items: 
+            yield fuse.Direntry(i)
+
+# Ugly hack to get fuse to play ball with external options set. 
+# review later
+sys.argv = [sys.argv[0],args.mountpoint]
+ 
+fs = ApiFS(args.api,config)
+fs.parse(errex=1)
+fs.main()
+
