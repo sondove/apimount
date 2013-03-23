@@ -16,12 +16,11 @@ Specify resource to mount:
 
 Interrogate resource using filesystem primitives:
 
-  sondove@atlas:~/projects/apimount$ ls -l test/                                                                                         │sondove@atlas:(master)~/projects/apimount-ref$ ls                  │ 'server': 'nginx',
-  total 12                                                                                                                               │apimount.conf  mydest  sample.py  test.py                          │ 'transfer-encoding': 'chunked',
-  drwxrwxr-x 2 sondove sondove 4096 Mar 23 20:19 resource1                                                                               │apimount.py    ref.py  sfs.log                                     │ 'x-request-id': 'fdf516b5-7c89-4102-97d8-66457e91113c',
-  drwxrwxr-x 9 sondove sondove 4096 Mar 23 20:20 resource2                                                                               │sondove@atlas:(master)~/projects/apimount-ref$ cd ..               │ 'x-response-time': '0'}
+  sondove@atlas:~/projects/apimount$ ls -l test/
+  total 12                                     
+  drwxrwxr-x 2 sondove sondove 4096 Mar 23 20:19 resource1
+  drwxrwxr-x 9 sondove sondove 4096 Mar 23 20:20 resource2
   drwxrwxr-x 2 sondove sondove 4096 Mar 23 20:19 resource3
-
 
   sondove@atlas:~/projects/apimount$ tree test/                                                                                         │sondove@atlas:(master)~/projects/apimount-ref$ ls                  │ 'server': 'nginx',
   test/
