@@ -125,9 +125,6 @@ class ApiFS(fuse.Fuse):
         # base permissions, none
         perm = 0
 
-        # for now, always allow execute
-        perm = perm | 0100
-
         # produce a set of all allowed verbs on the resource
         allowed = set(r.headers['allow'].split(','))
 
@@ -143,9 +140,19 @@ class ApiFS(fuse.Fuse):
         # Create file stat object
         st = fuse.Stat()  
 
-        # TODO: extract type from X-Type header
-        st.st_mode = stat.S_IFDIR | perm
-        st.st_nlink = 2  
+        if r.headers['x-type'] == 'dir':
+            # for now, always allow execute on folders
+            perm = perm | 0100
+            st.st_mode = stat.S_IFDIR | perm
+            st.st_nlink = 2  
+        elif r.headers['x-type'] == 'file':
+            st.st_mode = stat.S_IFREG | perm
+            st.st_nlink = 1  
+        else:
+            # what should we default to?
+            st.st_mode = stat.S_IFREG | perm
+            st.st_nlink = 1  
+
 
         # last modified headr information?
         # TODO: extract last modified from header
