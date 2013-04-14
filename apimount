@@ -185,8 +185,10 @@ class ApiFS(fuse.Fuse):
         # get size of object
         # TODO: use HEAD instead of GET
         r = req.get(query_path, cookies=self.cookie) 
-        csize = r.headers['content-size']
-        log.debug('content size is %s' % (csize,))
+        csize = r.headers['content-length']
+        if csize:
+            st.st_size = int(csize)
+            log.debug('content size is %s' % (csize,))
 
         # investigate if string values can be supplied from the server
         st.st_gid = self.gid
@@ -234,11 +236,12 @@ class ApiFS(fuse.Fuse):
 
         # 
         r = req.get(query_path, cookies=self.cookie, headers = {'content-type': 'text/plain'}) 
-        log.debug('Status code for resource "%s" is %s' % (path,r.status_code) )
+        log.debug('status code for resource "%s" is %s' % (path,r.status_code) )
 
         data = r.content
         #return self.data[offset:offset+length]
-        return data
+        log.debug('data: "%s"' % (data) )
+        return str(data)
 
 
 
