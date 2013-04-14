@@ -94,8 +94,12 @@ if not r:
 
 fuse.fuse_python_api = (0, 2)
 
-logging.basicConfig(filename='apimount.log',level=logging.DEBUG)
+logging.basicConfig(filename='apimount.log',level=logging.DEBUG,format='%(asctime)s %(levelname)s %(name)s %(funcName)s %(message)s')
 log = logging.getLogger('apimount')
+
+# Supress requests warning  (http://stackoverflow.com/questions/11029717)
+requests_log = logging.getLogger("requests")
+requests_log.setLevel(logging.WARNING)
 
 class ApiFS(fuse.Fuse):
     """
@@ -123,6 +127,7 @@ class ApiFS(fuse.Fuse):
 
         # use OPTIONS request to figure out neccessary info
         r = req.options(query_path, cookies=self.cookie) 
+        log.debug('Status code for resource "%s" is %s' % (path,r.status_code) )
 
         if not r.ok:
             return - errno.ENOENT  
@@ -191,6 +196,8 @@ class ApiFS(fuse.Fuse):
         for i in items: 
             yield fuse.Direntry(i)
 
+    def create(self, path, flags, mode):
+        log.debug('creat invoked')
 
 # Ugly hack to get fuse to play ball with external options set. 
 # review later
