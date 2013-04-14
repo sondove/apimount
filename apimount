@@ -239,9 +239,12 @@ class ApiFS(fuse.Fuse):
         log.debug('status code for resource "%s" is %s' % (path,r.status_code) )
 
         data = r.content
-        #return self.data[offset:offset+length]
-        log.debug('data: "%s"' % (data) )
-        return str(data)
+
+        left = len(data)-offset
+        if left < size:
+            size = left
+
+        return data[offset:offset+size]
 
 
 
