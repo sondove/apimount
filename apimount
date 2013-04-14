@@ -145,7 +145,7 @@ class ApiFS(fuse.Fuse):
 
         else:
             # if a resource is not "gettable" it does not exist as a file entity
-            log.debug('resource "%s" exists but is not "GETable"' % (path,) )
+            log.debug('resource "%s" exists but is not "GETable" (attributes: %s)' % (path,allowed) )
             return - errno.ENOENT  
 
         # write permissions are given by the ability to modify the resource
