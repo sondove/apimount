@@ -136,7 +136,7 @@ class ApiFS(fuse.Fuse):
         perm = 0
 
         # produce a set of all allowed verbs on the resource
-        allowed = set(r.headers['allow'].split(','))
+        allowed = set([x.strip() for x in r.headers['allow'].split(',')])
 
         # read permissions are defined by the ability to read the resource
         if allowed & set(['GET']):
