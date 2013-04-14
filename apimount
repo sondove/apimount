@@ -138,15 +138,21 @@ class ApiFS(fuse.Fuse):
         # produce a set of all allowed verbs on the resource
         allowed = set(r.headers['allow'].split(','))
 
+        # read permissions are defined by the ability to read the resource
+        if allowed & set(['GET']):
+            log.debug('read permission granted by %s' % (allowed,) )
+            perm = perm | 0400
+
+        else:
+            # if a resource is not "gettable" it does not exist as a file entity
+            log.debug('resource "%s" exists but is not "GETable"' % (path,) )
+            return - errno.ENOENT  
+
         # write permissions are given by the ability to modify the resource
         if allowed & set(['PUT','PATH','POST','DELETE']):
             log.debug('write permission granted by %s' % (allowed,) )
             perm = perm | 0200
     
-        # read permissions are defined by the ability to read the resource
-        if allowed & set(['GET']):
-            log.debug('read permission granted by %s' % (allowed,) )
-            perm = perm | 0400
 
 
         # Create file stat object
@@ -154,17 +160,17 @@ class ApiFS(fuse.Fuse):
 
         if r.headers['x-type'] == 'dir':
             # for now, always allow execute on folders
-            log.debug('Object is a folder')
+            log.debug('resource %s is a folder' % (path,))
             perm = perm | 0100
             st.st_mode = stat.S_IFDIR | perm
             st.st_nlink = 2  
         elif r.headers['x-type'] == 'file':
-            log.debug('Object is a folder')
+            log.debug('resource %s is a file' % (path,))
             st.st_mode = stat.S_IFREG | perm
             st.st_nlink = 1  
         else:
             # what should we default to?
-            log.debug('No x-type header, defaulting to file')
+            log.warning('No x-type header for resource %s, defaulting to file' % (path,))
             st.st_mode = stat.S_IFREG | perm
             st.st_nlink = 1  
 
@@ -184,6 +190,7 @@ class ApiFS(fuse.Fuse):
     def readdir(self, path, offset):  
         # reading directory, get items from remote server for path
 
+        log.debug('requested enumeration of : %s' %(path,))
         query_path = self.api + path
         r = req.get(query_path, cookies=self.cookie) 
 
@@ -194,10 +201,25 @@ class ApiFS(fuse.Fuse):
         items = [str(x['name']) for x in resp['resources']]
 
         for i in items: 
+            log.debug('returning directory entry: %s' %(i,))
             yield fuse.Direntry(i)
 
-    def create(self, path, flags, mode):
-        log.debug('creat invoked')
+    def mkdir(self, path, mode):
+        log.debug('try to create folder %s' % (path,))
+
+        # it's better to ask forgiveness then permission
+        # let the server worry about permissions with the apropriate status code
+
+        # construct query path from base api + path
+        query_path = self.api + path
+        log.debug('post request is: %s' % (query_path))
+
+        # 
+        r = req.post(query_path, cookies=self.cookie) 
+        log.debug('Status code for resource "%s" is %s' % (path,r.status_code) )
+
+
+
 
 # Ugly hack to get fuse to play ball with external options set. 
 # review later
