@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 # STDLIB DEP
+#TODO: Clean up imports
 import time
 import stat
 import errno
@@ -93,6 +94,9 @@ if not r:
 
 fuse.fuse_python_api = (0, 2)
 
+logging.basicConfig(filename='apimount.log',level=logging.DEBUG)
+log = logging.getLogger('apimount')
+
 class ApiFS(fuse.Fuse):
     """
     Main wrapper class for the fs
@@ -112,6 +116,7 @@ class ApiFS(fuse.Fuse):
         self.cookie = config.get(self.api,'cookie')
 
     def getattr(self, path):  
+        log.debug('attributes requested for %s' % (path,) )
 
         # construct query path from base api + path
         query_path = self.api + path
@@ -130,10 +135,12 @@ class ApiFS(fuse.Fuse):
 
         # write permissions are given by the ability to modify the resource
         if allowed & set(['PUT','PATH','POST','DELETE']):
+            log.debug('write permission granted by %s' % (allowed,) )
             perm = perm | 0200
     
         # read permissions are defined by the ability to read the resource
         if allowed & set(['GET']):
+            log.debug('read permission granted by %s' % (allowed,) )
             perm = perm | 0400
 
 
@@ -142,14 +149,17 @@ class ApiFS(fuse.Fuse):
 
         if r.headers['x-type'] == 'dir':
             # for now, always allow execute on folders
+            log.debug('Object is a folder')
             perm = perm | 0100
             st.st_mode = stat.S_IFDIR | perm
             st.st_nlink = 2  
         elif r.headers['x-type'] == 'file':
+            log.debug('Object is a folder')
             st.st_mode = stat.S_IFREG | perm
             st.st_nlink = 1  
         else:
             # what should we default to?
+            log.debug('No x-type header, defaulting to file')
             st.st_mode = stat.S_IFREG | perm
             st.st_nlink = 1  
 
@@ -180,6 +190,7 @@ class ApiFS(fuse.Fuse):
 
         for i in items: 
             yield fuse.Direntry(i)
+
 
 # Ugly hack to get fuse to play ball with external options set. 
 # review later
