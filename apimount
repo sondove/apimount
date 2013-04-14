@@ -181,6 +181,13 @@ class ApiFS(fuse.Fuse):
         st.st_mtime = st.st_atime  
         st.st_ctime = st.st_atime  
 
+
+        # get size of object
+        # TODO: use HEAD instead of GET
+        r = req.get(query_path, cookies=self.cookie) 
+        csize = r.headers['content-size']
+        log.debug('content size is %s' % (csize,))
+
         # investigate if string values can be supplied from the server
         st.st_gid = self.gid
         st.st_uid = self.uid
