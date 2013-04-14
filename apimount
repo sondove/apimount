@@ -127,7 +127,7 @@ class ApiFS(fuse.Fuse):
 
         # use OPTIONS request to figure out neccessary info
         r = req.options(query_path, cookies=self.cookie) 
-        log.debug('Status code for resource "%s" is %s' % (path,r.status_code) )
+        log.debug('status code for OTIONS on resource "%s" is %s' % (path,r.status_code) )
 
         if not r.ok:
             return - errno.ENOENT  
@@ -170,7 +170,7 @@ class ApiFS(fuse.Fuse):
             st.st_nlink = 1  
         else:
             # what should we default to?
-            log.warning('No x-type header for resource %s, defaulting to file' % (path,))
+            log.warning('no x-type header for resource %s, defaulting to file' % (path,))
             st.st_mode = stat.S_IFREG | perm
             st.st_nlink = 1  
 
