@@ -204,6 +204,7 @@ class ApiFS(fuse.Fuse):
         r = req.get(query_path, cookies=self.cookie) 
 
         resp = json.loads(r.content)
+        log.debug('response : %s' %(resp,))
 
         # this relies on remote api to use the convention of 
         # resources and name, consider making this a configurable setting
@@ -245,6 +246,40 @@ class ApiFS(fuse.Fuse):
             size = left
 
         return data[offset:offset+size]
+
+    def write(self, path, buf, offset):
+        # if offset != 0 then this is a patch
+        log.debug('trying to write "%s" with offset: %s' % (path, offset))
+
+        query_path = self.api + path
+        log.debug('post request is: %s' % (query_path))
+
+        if offset == 0:
+            # TODO: improve to extract length from response instead
+            r = req.post(query_path, data=buf, cookies=self.cookie, headers = {'content-type': 'text/plain'}) 
+            log.debug('post status code for resource "%s" is %s' % (path,r.status_code) )
+            if r.ok:
+                return len(buf)
+        else:
+            # TODO: use e-tag with sha1 to verify content for patching or modified timestamp
+            boffset = "bytes=%s-" % (offset,)
+            h = {
+                    'content-type': 'text/plain',
+                    'Range': boffset
+                }
+            r = req.patch(query_path, data=buf, cookies=self.cookie, headers = h) 
+            log.debug('patch status code for resource "%s" is %s' % (path,r.status_code) )
+
+            # TODO: consider usign content-length +204 for size information
+            try:
+                resp = json.loads(r.content)
+                size = resp['length']
+                log.debug('total new size: %s' % (size,))
+                return size
+            except:
+                # if information is not present use 0 to force error
+
+                return 0
 
 
 
