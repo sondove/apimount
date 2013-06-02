@@ -158,17 +158,18 @@ class ApiFS(fuse.Fuse):
         # Create file stat object
         st = fuse.Stat()  
 
-        if r.headers['x-type'] == 'dir':
-            # for now, always allow execute on folders
-            log.debug('resource %s is a folder' % (path,))
-            perm = perm | 0100
-            st.st_mode = stat.S_IFDIR | perm
-            st.st_nlink = 2  
-        elif r.headers['x-type'] == 'file':
-            log.debug('resource %s is a file' % (path,))
-            st.st_mode = stat.S_IFREG | perm
-            st.st_nlink = 1  
-        else:
+        try:
+            if r.headers['x-type'] == 'dir':
+                # for now, always allow execute on folders
+                log.debug('resource %s is a folder' % (path,))
+                perm = perm | 0100
+                st.st_mode = stat.S_IFDIR | perm
+                st.st_nlink = 2  
+            elif r.headers['x-type'] == 'file':
+                log.debug('resource %s is a file' % (path,))
+                st.st_mode = stat.S_IFREG | perm
+                st.st_nlink = 1  
+        except:
             # what should we default to?
             log.warning('no x-type header for resource %s, defaulting to file' % (path,))
             st.st_mode = stat.S_IFREG | perm
