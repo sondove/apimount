@@ -251,6 +251,11 @@ class ApiFS(fuse.Fuse):
 
         return data[offset:offset+size]
 
+    def truncate ( self, path, size ):
+        #TODO: Truncate data on the server side
+        log.debug('trying to truncate "%s" with size: %s' % (path, size))
+        return 0
+
     def write(self, path, buf, offset):
         # if offset != 0 then this is a patch
         log.debug('trying to write "%s" with offset: %s' % (path, offset))
