@@ -169,6 +169,10 @@ class ApiFS(fuse.Fuse):
                 log.debug('resource %s is a file' % (path,))
                 st.st_mode = stat.S_IFREG | perm
                 st.st_nlink = 1  
+            else:
+                log.warning('no x-type header for resource %s, defaulting to file' % (path,))
+                st.st_mode = stat.S_IFREG | perm
+                st.st_nlink = 1  
         except:
             # what should we default to?
             log.warning('no x-type header for resource %s, defaulting to file' % (path,))
